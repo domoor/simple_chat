@@ -34,7 +34,7 @@ void recv_clt(void* clt) {
 		mtx.lock();
 		char edit_msg[STR_LEN];
 		sprintf(edit_msg, "\n[ %d ] ", sock);
-		int size = strlen(edit_msg);
+		int size = strlen(edit_msg) + 1;
 		res < STR_LEN-size ? res : res = STR_LEN-size;
 		strncat(edit_msg, msg, res);
 
