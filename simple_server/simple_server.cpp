@@ -12,7 +12,7 @@ using std::cout;
 #define STR_LEN		1024
 
 list<SOCKET> user;
-mutex mtx;
+mutex mtx, mtxc;
 
 void usage() {
 	cout << "syntax: simple_server.exe <PORT>\n";
@@ -20,10 +20,10 @@ void usage() {
 }
 
 void recv_clt(void* clt) {
-	mtx.lock();
 	SOCKET sock = *(SOCKET*)clt;
+	mtxc.lock();
 	cout << "식별 번호 : " << sock << "\n\n";
-	mtx.unlock();
+	mtxc.unlock();
 
 	char msg[STR_LEN]="채팅방에 입장하였습니다.\n";
 	int res = send(sock, msg, strlen(msg), 0);
@@ -31,26 +31,24 @@ void recv_clt(void* clt) {
 		res = recv(sock, msg, sizeof(msg), 0);
 		if(res == SOCKET_ERROR) continue;
 
-		mtx.lock();
 		char edit_msg[STR_LEN];
 		sprintf(edit_msg, "\n[ %d ] ", sock);
 		int size = strlen(edit_msg) + 1;
 		res < STR_LEN-size ? res : res = STR_LEN-size;
 		strncat(edit_msg, msg, res);
 
+		mtx.lock();
 		for(list<SOCKET>::iterator it=user.begin(); it != user.end(); it++) {
 			if(*it != sock) send(*it, edit_msg, strlen(edit_msg), 0);
 		}
 		mtx.unlock();
 		if(!strncmp(msg, "exit", res)) res = SOCKET_ERROR;
 	}
-	list<SOCKET>::iterator del_it;
-	for (del_it = user.begin(); *del_it != sock; del_it++);
-	user.erase(del_it);
+	user.remove(sock);
 	closesocket(sock);
-	mtx.lock();
+	mtxc.lock();
 	cout << "익명의 이용자 < 식별 번호 : " << sock << " > 퇴장\n\n";
-	mtx.unlock();
+	mtxc.unlock();
 }
 
 int main(int argc, char* argv[])
@@ -90,15 +88,17 @@ int main(int argc, char* argv[])
 	int clt_len = sizeof(clt_addr);
 	cout << "채팅 서버 프로그램이 실행되었습니다.\n";
 	while(1) {
-		user.push_back(accept(tcp_sock, (SOCKADDR *)&clt_addr, &clt_len));
-		if(user.back() != INVALID_SOCKET) {
+		SOCKET clt = accept(tcp_sock, (SOCKADDR *)&clt_addr, &clt_len);
+		if(clt != INVALID_SOCKET) {
+			mtx.lock();
+			user.push_back(clt);
+			mtx.unlock();
 			_beginthread(recv_clt, 0, &user.back());
 			char ip_buf[16];
-			mtx.lock();
+			mtxc.lock();
 			cout << user.size() << "번째 익명의 이용자 < " << inet_ntop(AF_INET, &clt_addr.sin_addr, ip_buf, 16) << " > 입장\n";
-			mtx.unlock();
+			mtxc.unlock();
 		}
-		else 	user.pop_back();
 	}
 	closesocket(tcp_sock);
 	WSACleanup();

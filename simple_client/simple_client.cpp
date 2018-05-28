@@ -1,11 +1,9 @@
 #include <iostream>
-#include <mutex>
 #include <process.h>
 #include <winsock2.h>
 using namespace std;
 
 #define STR_LEN 1024
-mutex mtx;
 
 void usage() {
 	cout << "syntax: simple_client.exe <IP> <PORT>\n";
@@ -20,12 +18,9 @@ void recv_msg(void* sock) {
 		res < STR_LEN ? res : res = STR_LEN-1;
 		msg[res] = '\0';
 
-		mtx.lock();
 		cout << msg << endl;
-		mtx.unlock();
 	}
 	closesocket(*(SOCKET*)sock);
-	WSACleanup();
 }
 
 int main(int argc, char* argv[])
