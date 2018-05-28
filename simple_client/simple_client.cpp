@@ -58,6 +58,7 @@ int main(int argc, char* argv[])
 	char send_str[STR_LEN];
 	int res = 1;
 	do {
+		cin.clear();
 		cin.getline(send_str, STR_LEN);
 		if(!strlen(send_str)) continue;
 		res = send(tcp_sock, send_str, strlen(send_str), 0);
