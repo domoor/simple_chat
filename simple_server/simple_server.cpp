@@ -2,9 +2,6 @@
 #include <list>
 #include <mutex>
 #include <process.h>
-//#include <stdint.h>
-//#include <stdio.h>
-//#include <string>
 #include <WS2tcpip.h> // inet_ntop
 #include <winsock2.h>
 
@@ -15,8 +12,6 @@ using std::cout;
 #define STR_LEN		1024
 
 list<SOCKET> user;
-//list<SOCKET>::iterator user_num;
-//	list<SOCKET>::iterator user_num = user.begin();
 mutex mtx;
 
 void usage() {
@@ -26,7 +21,6 @@ void usage() {
 
 void recv_clt(void* clt) {
 	mtx.lock();
-//	printf("식별 번호 : %d\n\n", *(SOCKET*)clt);
 	SOCKET sock = *(SOCKET*)clt;
 	cout << "식별 번호 : " << sock << "\n\n";
 	mtx.unlock();
@@ -57,7 +51,6 @@ void recv_clt(void* clt) {
 	mtx.lock();
 	cout << "익명의 이용자 < 식별 번호 : " << sock << " > 퇴장\n\n";
 	mtx.unlock();
-
 }
 
 int main(int argc, char* argv[])
@@ -80,8 +73,6 @@ int main(int argc, char* argv[])
 	srv.sin_family = AF_INET;
 	srv.sin_port = htons(atoi(argv[1]));
 	srv.sin_addr.s_addr = htonl(INADDR_ANY);
-//	srv.sin_addr.s_addr = inet_addr("192.168.40.3"); // 아이피가 존재하지 않으면 bind error
-														// 서버 아이피
 
 	int error = bind(tcp_sock, (SOCKADDR *)&srv, sizeof(srv));
 	if (error == SOCKET_ERROR) {
@@ -99,40 +90,16 @@ int main(int argc, char* argv[])
 	int clt_len = sizeof(clt_addr);
 	cout << "채팅 서버 프로그램이 실행되었습니다.\n";
 	while(1) {
-//		SOCKET clt = accept(tcp_sock, (SOCKADDR *)&clt_addr, &clt_len);
-//				└클라이언트를 구분짓기 위한 변수로 이해하기
 		user.push_back(accept(tcp_sock, (SOCKADDR *)&clt_addr, &clt_len));
-	/*
-		if (clt == INVALID_SOCKET) {
-			printf("accept error!!\n");
-			return 0;
-		}
-	*/
-//		printf("clt : %d\t%u\n", *user_num, *user_num);
-//		printf("clt : %d\t%u", clt, clt);
-//		if(*(++user_num) != INVALID_SOCKET) {
 		if(user.back() != INVALID_SOCKET) {
-//		if(clt != INVALID_SOCKET) {
 			_beginthread(recv_clt, 0, &user.back());
 			char ip_buf[16];
-//			printf("%d번째 이용자 < %s > 입장\n", user.size(), inet_ntop(AF_INET, &clt_addr.sin_addr, ip_buf, 16));
 			mtx.lock();
 			cout << user.size() << "번째 익명의 이용자 < " << inet_ntop(AF_INET, &clt_addr.sin_addr, ip_buf, 16) << " > 입장\n";
 			mtx.unlock();
 		}
-		else {
-//			user_num--;
-			user.pop_back();
-		}
+		else 	user.pop_back();
 	}
-/*
-	char str[1024];
-	recv(clt, str, sizeof(str), 0); // 사용자 구분(clt 변수)
-	printf("%s\n", str);
-
-	recv(clt, str, sizeof(str), 0); // 사용자 구분(clt 변수)
-	printf("%s\n", str);
-*/
 	closesocket(tcp_sock);
 	WSACleanup();
 	return 0;
